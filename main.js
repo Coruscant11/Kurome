@@ -5,6 +5,12 @@ const { Routes } = require('discord-api-types/v9');
 
 const { Client, Intents, Collection } = require('discord.js');
 const { token } = require('./config.json');
+
+
+var dir = './bin';
+if (!fs.existsSync(dir)) fs.mkdirSync(dir);
+
+
 const client = new Client({ intents: [Intents.FLAGS.GUILDS] });
 client.commands = new Collection();
 
