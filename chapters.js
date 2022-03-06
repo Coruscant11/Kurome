@@ -20,7 +20,6 @@ module.exports = {
             .setURL(pages[page])
             .setFooter({ text: `Volume ${chapter.volume}` });
 
-        console.log(pages[page]);
         return chapterImageEmbed;
     },
     async uploadEmbedImage(interaction, url) {
