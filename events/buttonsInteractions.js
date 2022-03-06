@@ -16,11 +16,6 @@ function launchMangaButtonAction(interaction) {
     interaction.message.delete();
     const client = interaction.client;
 
-    const prevVolEmoji = client.emojis.cache.find(emoji => emoji.name === "track_previous");
-    const prevChapEmoji = client.emojis.cache.find(emoji => emoji.name === "track_next");
-    const nextChapEmoji = client.emojis.cache.find(emoji => emoji.name === "rewind");
-    const nextVolEmoji = client.emojis.cache.find(emoji => emoji.name === "fast_forward");
-
     MFA.login(mdLogin, mdPswd, './bin/.md_cache').then(async() => {
         let manga = await MFA.Manga.getByQuery(interaction.customId);
         let chapters = await manga.getFeed({ translatedLanguage: ['en'] }, true);
@@ -31,7 +26,7 @@ function launchMangaButtonAction(interaction) {
         const selectRow = new MessageActionRow()
             .addComponents(
                 new MessageSelectMenu()
-                .setCustomId(`${interaction.customId}${SEPARATOR}{chapters[0].volume}`)
+                .setCustomId(`${interaction.customId}${SEPARATOR}${chapters[0].volume}`)
                 .setPlaceholder("Rien de sélectionné.")
                 .addOptions(chaptersAssets.buildChaptersFromVolume(chapters[0].volume, chapters, interaction.customId)),
             );
@@ -42,22 +37,22 @@ function launchMangaButtonAction(interaction) {
             .addComponents(
                 new MessageButton()
                 .setCustomId(`volumeLeft%%%%${interaction.customId}${SEPARATOR}${(+new Date).toString(36)}`)
-                .setLabel(prevVolEmoji)
+                .setLabel("Volume précédent")
                 .setDisabled(true)
                 .setStyle("PRIMARY"),
                 new MessageButton()
                 .setCustomId(`pageLeft%%%%${interaction.customId}${SEPARATOR}${(+new Date).toString(36)}`)
-                .setLabel(prevChapEmoji)
+                .setLabel("Page précédente")
                 .setDisabled(true)
                 .setStyle("PRIMARY"),
                 new MessageButton()
                 .setCustomId(`pageRight%%%%${interaction.customId}${SEPARATOR}${(+new Date).toString(36)}`)
-                .setLabel(nextChapEmoji)
+                .setLabel("Page suivante")
                 .setDisabled(true)
                 .setStyle("PRIMARY"),
                 new MessageButton()
                 .setCustomId(`volumeRight%%%%${interaction.customId}${SEPARATOR}${(+new Date).toString(36)}`)
-                .setLabel(nextVolEmoji)
+                .setLabel("Volume suivant")
                 .setDisabled(manga.lastVolume === "" || manga.lastVolume > chapters[0].volume)
                 .setStyle("PRIMARY")
             )
