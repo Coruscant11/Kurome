@@ -5,13 +5,21 @@ const chaptersAssets = require("../chapters.js");
 
 const LEFT = -1;
 const RIGHT = 1;
+const PREVIOUS_VOLUME = 0;
+const PREVIOUS_CHAPTER = 1;
+const NEXT_CHAPTER = 2;
+const NEXT_VOLUME = 3;
+const SEPARATOR = "%%%%";
 
 
 function launchMangaButtonAction(interaction) {
     interaction.message.delete();
-    console.log(`${interaction.user.tag} a choisi ${interaction.customId}.`);
+    const client = interaction.client;
 
-
+    const prevVolEmoji = client.emojis.cache.find(emoji => emoji.name === "track_previous");
+    const prevChapEmoji = client.emojis.cache.find(emoji => emoji.name === "track_next");
+    const nextChapEmoji = client.emojis.cache.find(emoji => emoji.name === "rewind");
+    const nextVolEmoji = client.emojis.cache.find(emoji => emoji.name === "fast_forward");
 
     MFA.login(mdLogin, mdPswd, './bin/.md_cache').then(async() => {
         let manga = await MFA.Manga.getByQuery(interaction.customId);
@@ -23,7 +31,7 @@ function launchMangaButtonAction(interaction) {
         const selectRow = new MessageActionRow()
             .addComponents(
                 new MessageSelectMenu()
-                .setCustomId(`${interaction.customId}%%%%${chapters[0].volume}`)
+                .setCustomId(`${interaction.customId}${separator}{chapters[0].volume}`)
                 .setPlaceholder("Rien de sélectionné.")
                 .addOptions(chaptersAssets.buildChaptersFromVolume(chapters[0].volume, chapters, interaction.customId)),
             );
@@ -33,30 +41,25 @@ function launchMangaButtonAction(interaction) {
         const navigationsButtonsRow = new MessageActionRow()
             .addComponents(
                 new MessageButton()
-                .setCustomId(`volumeLeft%%%%${interaction.customId}%%%%${(+new Date).toString(36)}`)
-                .setLabel('Volume précédent')
+                .setCustomId(`volumeLeft%%%%${interaction.customId}${separator}${(+new Date).toString(36)}`)
+                .setLabel(prevVolEmoji)
                 .setDisabled(true)
                 .setStyle("PRIMARY"),
                 new MessageButton()
-                .setCustomId(`pageLeft%%%%${interaction.customId}%%%%${(+new Date).toString(36)}`)
-                .setLabel('Page précédente')
+                .setCustomId(`pageLeft%%%%${interaction.customId}${separator}${(+new Date).toString(36)}`)
+                .setLabel(prevChapEmoji)
                 .setDisabled(true)
                 .setStyle("PRIMARY"),
                 new MessageButton()
-                .setCustomId(`pageRight%%%%${interaction.customId}%%%%${(+new Date).toString(36)}`)
-                .setLabel('Page suivante')
+                .setCustomId(`pageRight%%%%${interaction.customId}${separator}${(+new Date).toString(36)}`)
+                .setLabel(nextChapEmoji)
                 .setDisabled(true)
                 .setStyle("PRIMARY"),
                 new MessageButton()
-                .setCustomId(`volumeRight%%%%${interaction.customId}%%%%${(+new Date).toString(36)}`)
-                .setLabel('Volume suivant')
+                .setCustomId(`volumeRight%%%%${interaction.customId}${separator}${(+new Date).toString(36)}`)
+                .setLabel(nextVolEmoji)
                 .setDisabled(manga.lastVolume === "" || manga.lastVolume > chapters[0].volume)
-                .setStyle("PRIMARY"),
-                new MessageButton()
-                .setCustomId("notShowing")
-                .setLabel("L'image de s'affiche pas")
-                .setStyle('SECONDARY')
-                .setDisabled(true)
+                .setStyle("PRIMARY")
             )
 
         interaction.channel.send({ components: [selectRow, navigationsButtonsRow] });
@@ -68,10 +71,10 @@ function launchMangaButtonAction(interaction) {
 function volumeChangeButtonAction(interaction, direction) {
     const firstSelectSplit = interaction.message.components[0].components[0].options[0].value;
     const interactionIdSplit = firstSelectSplit.split("%%%%");
-    let actualPage = interactionIdSplit[0];
     const mangaTitle = interactionIdSplit[1];
     let volume = interactionIdSplit[2];
     let selectRow = interaction.message.components[0];
+    const navigationButtonsRow = interaction.message.components[1];
 
     MFA.login(mdLogin, mdPswd, './bin/.md_cache').then(async() => {
         let manga = await MFA.Manga.getByQuery(mangaTitle);
@@ -82,11 +85,11 @@ function volumeChangeButtonAction(interaction, direction) {
         selectRow.components[0].setOptions(chaptersAssets.buildChaptersFromVolume(newVolume, chapters, mangaTitle));
 
         if (newVolume == 0) {
-            interaction.message.components[1].components[0].setDisabled(true);
+            navigationButtonsRow.components[PREVIOUS_VOLUME].setDisabled(true);
         } else if (newVolume > 1) {
-            interaction.message.components[1].components[0].setDisabled(false);
+            navigationButtonsRow.components[PREVIOUS_VOLUME].setDisabled(false);
         } else if (newVolume == manga.lastVolume) {
-            interaction.message.components[1].components[3].setDisabled(false);
+            navigationButtonsRow.components[NEXT_VOLUME].setDisabled(false);
         }
 
         await interaction.channel.send({ embeds: interaction.message.embeds, components: [selectRow, interaction.message.components[1]] });
@@ -97,10 +100,9 @@ function volumeChangeButtonAction(interaction, direction) {
 
 function pageChangeButtonAction(interaction, direction) {
     const firstSelectSplit = interaction.message.components[0].components[0].options[0].value;
-    const interactionIdSplit = firstSelectSplit.split("%%%%");
+    const interactionIdSplit = firstSelectSplit.split(SEPARATOR);
     const mangaTitle = interactionIdSplit[1];
-    let volume = interactionIdSplit[2];
-    let selectRow = interaction.message.components[0];
+    const navigationButtonsRow = interaction.message.components[1];
 
     if (interaction.message.embeds.length > 0) {
         let actualPage = parseInt(interaction.message.embeds[0].description.split(' ')[1].split('/')[0]) - 1;
@@ -115,17 +117,13 @@ function pageChangeButtonAction(interaction, direction) {
             let pages = await chapter.getReadablePages();
 
             if (actualPage == 0) {
-                interaction.message.components[1].components[1].setDisabled(true);
+                navigationButtonsRow.components[PREVIOUS_CHAPTER].setDisabled(true);
             } else if (actualPage > 0) {
-                interaction.message.components[1].components[1].setDisabled(false);
+                navigationButtonsRow.components[PREVIOUS_CHAPTER].setDisabled(false);
             }
             if (actualPage == pages.length - 1) {
-                interaction.message.components[1].components[2].setDisabled(true);
+                navigationButtonsRow.components[NEXT_CHAPTER].setDisabled(true);
             }
-
-            console.log("actu : " + actualPage)
-            console.log("length : " + pages.length)
-            interaction.message.components[1].components[4].setDisabled(false);
 
             chapterImageEmbed = chaptersAssets.buildChapterImageEmbed(actualChapter, actualPage, pages, chapters);
 
@@ -140,7 +138,7 @@ module.exports = {
     execute(interaction) {
         if (!interaction.isButton()) return;
 
-        const interactionSplit = interaction.customId.split("%%%%");
+        const interactionSplit = interaction.customId.split(SEPARATOR);
         switch (interactionSplit[0]) {
             case "volumeLeft":
                 volumeChangeButtonAction(interaction, LEFT);
@@ -153,9 +151,6 @@ module.exports = {
                 break;
             case "pageRight":
                 pageChangeButtonAction(interaction, RIGHT);
-                break;
-            case "notShowing":
-                uploadEmbedImage(interaction);
                 break;
             default:
                 launchMangaButtonAction(interaction);
