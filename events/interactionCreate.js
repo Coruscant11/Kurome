@@ -1,9 +1,13 @@
 const buttons = require('./buttonsInteractions.js');
+const selectMenus = require('./selectMenuInteractions.js');
+const chaptersAssets = require('../chapters.js');
+const { Permissions } = require('discord.js');
 
 module.exports = {
     name: 'interactionCreate',
     execute(interaction) {
         const client = interaction.client;
+        if (!interaction.member.permissions.has(Permissions.FLAGS.ADMINISTRATOR)) return;
 
         try {
             if (interaction.isCommand()) {
@@ -12,6 +16,8 @@ module.exports = {
                 command.execute(interaction);
             } else if (interaction.isButton()) {
                 buttons.execute(interaction);
+            } else if (interaction.isSelectMenu()) {
+                selectMenus.execute(interaction);
             }
         } catch (error) {
             console.error(error);

@@ -20,8 +20,6 @@ module.exports = {
                 limit: 5 // API Max is 100 per request, but this function accepts more
             }).then(results => {
                 if (results.length > 0) {
-                    console.log(`\n${interaction.user.tag} viens de rechercher "${search_manga_option}" :`)
-                    results.forEach((elem, i) => console.log(`\t[${i + 1}] ${elem.title}`));
                     let buttons = []
                     let responses = ""
                     const searchResult = new MessageEmbed()

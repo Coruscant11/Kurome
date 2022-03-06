@@ -1,8 +1,165 @@
+const { mdLogin, mdPswd } = require('../config.json')
+const MFA = require('mangadex-full-api');
+const { MessageActionRow, MessageSelectMenu, MessageSelectOptionData, MessageButton, MessageEmbed } = require('discord.js');
+const chaptersAssets = require("../chapters.js");
+
+const LEFT = -1;
+const RIGHT = 1;
+
+
+function launchMangaButtonAction(interaction) {
+    interaction.message.delete();
+    console.log(`${interaction.user.tag} a choisi ${interaction.customId}.`);
+
+
+
+    MFA.login(mdLogin, mdPswd, './bin/.md_cache').then(async() => {
+        let manga = await MFA.Manga.getByQuery(interaction.customId);
+        let chapters = await manga.getFeed({ translatedLanguage: ['en'] }, true);
+        chapters.sort((a, b) => parseFloat(a.chapter) - parseFloat(b.chapter));
+
+
+
+        const selectRow = new MessageActionRow()
+            .addComponents(
+                new MessageSelectMenu()
+                .setCustomId(`${interaction.customId}%%%%${chapters[0].volume}`)
+                .setPlaceholder("Rien de sélectionné.")
+                .addOptions(chaptersAssets.buildChaptersFromVolume(chapters[0].volume, chapters, interaction.customId)),
+            );
+
+        console.log(manga.lastVolume);
+
+        const navigationsButtonsRow = new MessageActionRow()
+            .addComponents(
+                new MessageButton()
+                .setCustomId(`volumeLeft%%%%${interaction.customId}%%%%${(+new Date).toString(36)}`)
+                .setLabel('Volume précédent')
+                .setDisabled(true)
+                .setStyle("PRIMARY"),
+                new MessageButton()
+                .setCustomId(`pageLeft%%%%${interaction.customId}%%%%${(+new Date).toString(36)}`)
+                .setLabel('Page précédente')
+                .setDisabled(true)
+                .setStyle("PRIMARY"),
+                new MessageButton()
+                .setCustomId(`pageRight%%%%${interaction.customId}%%%%${(+new Date).toString(36)}`)
+                .setLabel('Page suivante')
+                .setDisabled(true)
+                .setStyle("PRIMARY"),
+                new MessageButton()
+                .setCustomId(`volumeRight%%%%${interaction.customId}%%%%${(+new Date).toString(36)}`)
+                .setLabel('Volume suivant')
+                .setDisabled(manga.lastVolume === "" || manga.lastVolume > chapters[0].volume)
+                .setStyle("PRIMARY"),
+                new MessageButton()
+                .setCustomId("notShowing")
+                .setLabel("L'image de s'affiche pas")
+                .setStyle('SECONDARY')
+                .setDisabled(true)
+            )
+
+        interaction.channel.send({ components: [selectRow, navigationsButtonsRow] });
+
+        //let pages = await chapter.getReadablePages();
+    }).catch(console.error);
+}
+
+function volumeChangeButtonAction(interaction, direction) {
+    const firstSelectSplit = interaction.message.components[0].components[0].options[0].value;
+    const interactionIdSplit = firstSelectSplit.split("%%%%");
+    let actualPage = interactionIdSplit[0];
+    const mangaTitle = interactionIdSplit[1];
+    let volume = interactionIdSplit[2];
+    let selectRow = interaction.message.components[0];
+
+    MFA.login(mdLogin, mdPswd, './bin/.md_cache').then(async() => {
+        let manga = await MFA.Manga.getByQuery(mangaTitle);
+        let chapters = await manga.getFeed({ translatedLanguage: ['en'] }, true);
+        chapters.sort((a, b) => parseFloat(a.chapter) - parseFloat(b.chapter));
+
+        let newVolume = parseInt(volume) + direction;
+        selectRow.components[0].setOptions(chaptersAssets.buildChaptersFromVolume(newVolume, chapters, mangaTitle));
+
+        if (newVolume == 0) {
+            interaction.message.components[1].components[0].setDisabled(true);
+        } else if (newVolume > 1) {
+            interaction.message.components[1].components[0].setDisabled(false);
+        } else if (newVolume == manga.lastVolume) {
+            interaction.message.components[1].components[3].setDisabled(false);
+        }
+
+        await interaction.channel.send({ embeds: interaction.message.embeds, components: [selectRow, interaction.message.components[1]] });
+        //await interaction.update({ embeds: [], components: [], content: `Volume ${volume} lue.` });
+        await interaction.message.delete();
+    });
+}
+
+function pageChangeButtonAction(interaction, direction) {
+    const firstSelectSplit = interaction.message.components[0].components[0].options[0].value;
+    const interactionIdSplit = firstSelectSplit.split("%%%%");
+    const mangaTitle = interactionIdSplit[1];
+    let volume = interactionIdSplit[2];
+    let selectRow = interaction.message.components[0];
+
+    if (interaction.message.embeds.length > 0) {
+        let actualPage = parseInt(interaction.message.embeds[0].description.split(' ')[1].split('/')[0]) - 1;
+        actualPage = actualPage + direction;
+        let actualChapter = parseInt(interaction.message.embeds[0].title.split(' : ')[0]);
+
+        MFA.login(mdLogin, mdPswd, './bin/.md_cache').then(async() => {
+            let manga = await MFA.Manga.getByQuery(mangaTitle);
+            let chapters = await manga.getFeed({ translatedLanguage: ['en'] }, true);
+            chapters.sort((a, b) => parseFloat(a.chapter) - parseFloat(b.chapter));
+            let chapter = chapters.find(x => x.chapter == actualChapter);
+            let pages = await chapter.getReadablePages();
+
+            if (actualPage == 0) {
+                interaction.message.components[1].components[1].setDisabled(true);
+            } else if (actualPage > 0) {
+                interaction.message.components[1].components[1].setDisabled(false);
+            }
+            if (actualPage == pages.length - 1) {
+                interaction.message.components[1].components[2].setDisabled(true);
+            }
+
+            console.log("actu : " + actualPage)
+            console.log("length : " + pages.length)
+            interaction.message.components[1].components[4].setDisabled(false);
+
+            chapterImageEmbed = chaptersAssets.buildChapterImageEmbed(actualChapter, actualPage, pages, chapters);
+
+            await chaptersAssets.uploadEmbedImage(interaction, pages[actualPage]);
+            await interaction.channel.send({ embeds: [chapterImageEmbed], components: interaction.message.components });
+            await interaction.message.delete();
+        });
+    }
+}
+
 module.exports = {
     execute(interaction) {
         if (!interaction.isButton()) return;
 
-        interaction.update({ components: [] })
-        console.log(`${interaction.user.tag} a choisi ${interaction.customId}.`);
+        const interactionSplit = interaction.customId.split("%%%%");
+        switch (interactionSplit[0]) {
+            case "volumeLeft":
+                volumeChangeButtonAction(interaction, LEFT);
+                break;
+            case "volumeRight":
+                volumeChangeButtonAction(interaction, RIGHT);
+                break;
+            case "pageLeft":
+                pageChangeButtonAction(interaction, LEFT);
+                break;
+            case "pageRight":
+                pageChangeButtonAction(interaction, RIGHT);
+                break;
+            case "notShowing":
+                uploadEmbedImage(interaction);
+                break;
+            default:
+                launchMangaButtonAction(interaction);
+                break;
+        }
     }
 }
