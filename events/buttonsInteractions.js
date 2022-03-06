@@ -14,14 +14,11 @@ const SEPARATOR = "%%%%";
 
 function launchMangaButtonAction(interaction) {
     interaction.message.delete();
-    const client = interaction.client;
 
     MFA.login(mdLogin, mdPswd, './bin/.md_cache').then(async() => {
         let manga = await MFA.Manga.getByQuery(interaction.customId);
         let chapters = await manga.getFeed({ translatedLanguage: ['en'] }, true);
         chapters.sort((a, b) => parseFloat(a.chapter) - parseFloat(b.chapter));
-
-
 
         const selectRow = new MessageActionRow()
             .addComponents(
@@ -30,8 +27,6 @@ function launchMangaButtonAction(interaction) {
                 .setPlaceholder("Rien de sélectionné.")
                 .addOptions(chaptersAssets.buildChaptersFromVolume(chapters[0].volume, chapters, interaction.customId)),
             );
-
-        console.log(manga.lastVolume);
 
         const navigationsButtonsRow = new MessageActionRow()
             .addComponents(
@@ -58,8 +53,6 @@ function launchMangaButtonAction(interaction) {
             )
 
         interaction.channel.send({ components: [selectRow, navigationsButtonsRow] });
-
-        //let pages = await chapter.getReadablePages();
     }).catch(console.error);
 }
 
@@ -88,7 +81,6 @@ function volumeChangeButtonAction(interaction, direction) {
         }
 
         await interaction.channel.send({ embeds: interaction.message.embeds, components: [selectRow, interaction.message.components[1]] });
-        //await interaction.update({ embeds: [], components: [], content: `Volume ${volume} lue.` });
         await interaction.message.delete();
     });
 }
