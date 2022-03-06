@@ -29,14 +29,15 @@ module.exports = {
                         .setAuthor({ name: "Kurome" })
                         .setThumbnail("https://cdn.discordapp.com/attachments/709456544995213352/949383897458827284/searchkurome.png");
                     results.forEach((elem, i) => {
-                        searchResult.addField(`${i} : ` + elem.title, elem.id);
+                        searchResult.addField(`${i+1} : ` + elem.title, elem.id + 1);
                         buttons.push(new MessageButton()
                             .setCustomId(`${elem.title}`)
-                            .setLabel(`${i}`)
+                            .setLabel(`${i+1}`)
                             .setStyle('PRIMARY')
                         );
                     });
                     row = new MessageActionRow().addComponents(buttons)
+                    interaction.reply({ embeds: [searchResult], components: [row] });
                 } else {
                     interaction.reply(`Je n'ai trouvé aucun manga pour "${search_manga_option}".`);
                 }
