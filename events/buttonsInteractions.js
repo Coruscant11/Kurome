@@ -31,7 +31,7 @@ function launchMangaButtonAction(interaction) {
         const selectRow = new MessageActionRow()
             .addComponents(
                 new MessageSelectMenu()
-                .setCustomId(`${interaction.customId}${separator}{chapters[0].volume}`)
+                .setCustomId(`${interaction.customId}${SEPARATOR}{chapters[0].volume}`)
                 .setPlaceholder("Rien de sélectionné.")
                 .addOptions(chaptersAssets.buildChaptersFromVolume(chapters[0].volume, chapters, interaction.customId)),
             );
@@ -41,22 +41,22 @@ function launchMangaButtonAction(interaction) {
         const navigationsButtonsRow = new MessageActionRow()
             .addComponents(
                 new MessageButton()
-                .setCustomId(`volumeLeft%%%%${interaction.customId}${separator}${(+new Date).toString(36)}`)
+                .setCustomId(`volumeLeft%%%%${interaction.customId}${SEPARATOR}${(+new Date).toString(36)}`)
                 .setLabel(prevVolEmoji)
                 .setDisabled(true)
                 .setStyle("PRIMARY"),
                 new MessageButton()
-                .setCustomId(`pageLeft%%%%${interaction.customId}${separator}${(+new Date).toString(36)}`)
+                .setCustomId(`pageLeft%%%%${interaction.customId}${SEPARATOR}${(+new Date).toString(36)}`)
                 .setLabel(prevChapEmoji)
                 .setDisabled(true)
                 .setStyle("PRIMARY"),
                 new MessageButton()
-                .setCustomId(`pageRight%%%%${interaction.customId}${separator}${(+new Date).toString(36)}`)
+                .setCustomId(`pageRight%%%%${interaction.customId}${SEPARATOR}${(+new Date).toString(36)}`)
                 .setLabel(nextChapEmoji)
                 .setDisabled(true)
                 .setStyle("PRIMARY"),
                 new MessageButton()
-                .setCustomId(`volumeRight%%%%${interaction.customId}${separator}${(+new Date).toString(36)}`)
+                .setCustomId(`volumeRight%%%%${interaction.customId}${SEPARATOR}${(+new Date).toString(36)}`)
                 .setLabel(nextVolEmoji)
                 .setDisabled(manga.lastVolume === "" || manga.lastVolume > chapters[0].volume)
                 .setStyle("PRIMARY")
