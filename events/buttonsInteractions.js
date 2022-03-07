@@ -48,7 +48,7 @@ function launchMangaButtonAction(interaction) {
                 new MessageButton()
                 .setCustomId(`volumeRight%%%%${interaction.customId}${SEPARATOR}${(+new Date).toString(36)}`)
                 .setLabel("Volume suivant")
-                .setDisabled(manga.lastVolume === "" || manga.lastVolume > chapters[0].volume)
+                .setDisabled(manga.lastVolume == "" || manga.lastVolume <= chapters[0].volume)
                 .setStyle("PRIMARY")
             )
 
