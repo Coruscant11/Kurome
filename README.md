@@ -3,7 +3,7 @@
 
 #### The purpose of this project is to train JavaScript, DiscordJS and the Mangadex-API.
 
-First time dealing with discordjs so the code is pretty ugly lol 
+First time dealing with discordjs so the code is pretty ugly lol and there is still a lot of bugs
 
 ## API : 
 #### https://discordjs.guide/#before-you-begin
