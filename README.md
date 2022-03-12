@@ -1,7 +1,7 @@
 # Kurome
 ## Mangadex Discord Bot Reader. 
 
-#### The purpose of this project is to train JavaScript and DiscordJS.
+#### The purpose of this project is to train JavaScript, DiscordJS and the Mangadex-API.
 
 First time dealing with discordjs so the code is pretty ugly lol 
 
