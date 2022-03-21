@@ -3,6 +3,8 @@ const { MessageEmbed, MessageActionRow, MessageButton } = require('discord.js');
 const { mdLogin, mdPswd } = require('../config.json')
 const MFA = require('mangadex-full-api');
 
+const SEPARATOR = "%%%%";
+
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("search")
@@ -10,14 +12,20 @@ module.exports = {
         .addStringOption(option =>
             option.setName('manga_name')
             .setDescription('Titre du manga a rechercher.')
+            .setRequired(true))
+        .addStringOption(option =>
+            option.setName("language")
+            .setDescription("Translation language")
             .setRequired(true)),
+
     async execute(interaction) {
         const search_manga_option = interaction.options.getString('manga_name');
+        const search_language_option = interaction.options.getString("language");
 
         MFA.login(mdLogin, mdPswd, './bin/.md_cache').then(() => {
             MFA.Manga.search({
                 title: search_manga_option,
-                limit: 5 // API Max is 100 per request, but this function accepts more
+                limit: 5
             }).then(results => {
                 if (results.length > 0) {
                     let buttons = []
@@ -27,9 +35,15 @@ module.exports = {
                         .setAuthor({ name: "Kurome" })
                         .setThumbnail("https://cdn.discordapp.com/attachments/709456544995213352/949383897458827284/searchkurome.png");
                     results.forEach((elem, i) => {
-                        searchResult.addField(`${i+1} : ` + elem.title, elem.id + 1);
+                        let title;
+                        if (elem.title.length > 70)
+                            title = elem.title.substring(0, 70);
+                        else
+                            title = elem.title;
+
+                        searchResult.addField(`${i+1} : ` + title, elem.id + 1);
                         buttons.push(new MessageButton()
-                            .setCustomId(`${elem.title}`)
+                            .setCustomId(`${title}${SEPARATOR}${search_language_option}`)
                             .setLabel(`${i+1}`)
                             .setStyle('PRIMARY')
                         );

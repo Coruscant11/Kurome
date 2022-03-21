@@ -7,18 +7,21 @@ module.exports = {
         if (!interaction.isSelectMenu()) return;
 
         interactionIdSplit = interaction.values[0].split("%%%%");
-        const chapterNumber = parseInt(interactionIdSplit[0]);
+        console.table(interactionIdSplit)
+        const chapterId = interactionIdSplit[0];
         const mangaTitle = interactionIdSplit[1];
+        console.log(interaction.customId);
 
         MFA.login(mdLogin, mdPswd, './bin/.md_cache').then(async() => {
             console.log(interaction.customId)
-            let manga = await MFA.Manga.getByQuery(interaction.customId);
+            let manga = await MFA.Manga.getByQuery(mangaTitle);
             let chapters = await manga.getFeed({ translatedLanguage: ['en'] }, true);
             chapters.sort((a, b) => parseFloat(a.chapter) - parseFloat(b.chapter));
-            let chapter = chapters.find(x => x.chapter == chapterNumber);
+            console.table(chapters);
+            let chapter = chapters.find(x => x.id == chapterId);
             let pages = await chapter.getReadablePages();
 
-            chapterImageEmbed = chaptersAssets.buildChapterImageEmbed(chapterNumber, 0, pages, chapters);
+            chapterImageEmbed = chaptersAssets.buildChapterImageEmbed(chapterId, 0, pages, chapters);
             interaction.message.components[1].components[1].setDisabled(true);
             interaction.message.components[1].components[2].setDisabled(false);
 

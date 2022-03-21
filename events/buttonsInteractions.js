@@ -15,38 +15,42 @@ const SEPARATOR = "%%%%";
 function launchMangaButtonAction(interaction) {
     interaction.message.delete();
 
+    let customIdSplit = interaction.customId.split(SEPARATOR);
+    const mangaTitle = customIdSplit[0]
+    const mangaLanguage = customIdSplit[1];
+
     MFA.login(mdLogin, mdPswd, './bin/.md_cache').then(async() => {
-        let manga = await MFA.Manga.getByQuery(interaction.customId);
-        let chapters = await manga.getFeed({ translatedLanguage: ['en'] }, true);
+        let manga = await MFA.Manga.getByQuery(mangaTitle);
+        let chapters = await manga.getFeed({ translatedLanguage: [mangaLanguage] }, true);
         chapters.sort((a, b) => parseFloat(a.chapter) - parseFloat(b.chapter));
 
         const selectRow = new MessageActionRow()
             .addComponents(
                 new MessageSelectMenu()
-                .setCustomId(`${interaction.customId}${SEPARATOR}${chapters[0].volume}`)
+                .setCustomId(`${mangaTitle}${SEPARATOR}${chapters[0].volume}`)
                 .setPlaceholder("Rien de sélectionné.")
-                .addOptions(chaptersAssets.buildChaptersFromVolume(chapters[0].volume, chapters, interaction.customId)),
+                .addOptions(chaptersAssets.buildChaptersFromVolume(chapters[0].volume, chapters, mangaTitle)),
             );
 
         const navigationsButtonsRow = new MessageActionRow()
             .addComponents(
                 new MessageButton()
-                .setCustomId(`volumeLeft%%%%${interaction.customId}${SEPARATOR}${(+new Date).toString(36)}`)
+                .setCustomId(`volumeLeft%%%%${mangaTitle}${SEPARATOR}${(+new Date).toString(36)}`)
                 .setLabel("Volume précédent")
                 .setDisabled(true)
                 .setStyle("PRIMARY"),
                 new MessageButton()
-                .setCustomId(`pageLeft%%%%${interaction.customId}${SEPARATOR}${(+new Date).toString(36)}`)
+                .setCustomId(`pageLeft%%%%${mangaTitle}${SEPARATOR}${(+new Date).toString(36)}`)
                 .setLabel("Page précédente")
                 .setDisabled(true)
                 .setStyle("PRIMARY"),
                 new MessageButton()
-                .setCustomId(`pageRight%%%%${interaction.customId}${SEPARATOR}${(+new Date).toString(36)}`)
+                .setCustomId(`pageRight%%%%${mangaTitle}${SEPARATOR}${(+new Date).toString(36)}`)
                 .setLabel("Page suivante")
                 .setDisabled(true)
                 .setStyle("PRIMARY"),
                 new MessageButton()
-                .setCustomId(`volumeRight%%%%${interaction.customId}${SEPARATOR}${(+new Date).toString(36)}`)
+                .setCustomId(`volumeRight%%%%${mangaTitle}${SEPARATOR}${(+new Date).toString(36)}`)
                 .setLabel("Volume suivant")
                 .setDisabled(manga.lastVolume == "" || manga.lastVolume <= chapters[0].volume)
                 .setStyle("PRIMARY")
@@ -94,7 +98,13 @@ function pageChangeButtonAction(interaction, direction) {
     if (interaction.message.embeds.length > 0) {
         let actualPage = parseInt(interaction.message.embeds[0].description.split(' ')[1].split('/')[0]) - 1;
         actualPage = actualPage + direction;
-        let actualChapter = parseInt(interaction.message.embeds[0].title.split(' : ')[0]);
+
+        let embedTitle = interaction.message.embeds[0].title;
+        if (embedTitle.substring(embedTitle.length - 2, embedTitle.length) == " :")
+            embedTitle = embedTitle + " "
+
+        let actualChapter = embedTitle.split(' : ')[0];
+        console.log("actualChapter : " + actualChapter)
 
         MFA.login(mdLogin, mdPswd, './bin/.md_cache').then(async() => {
             let manga = await MFA.Manga.getByQuery(mangaTitle);
@@ -112,7 +122,7 @@ function pageChangeButtonAction(interaction, direction) {
                 navigationButtonsRow.components[NEXT_CHAPTER].setDisabled(true);
             }
 
-            chapterImageEmbed = chaptersAssets.buildChapterImageEmbed(actualChapter, actualPage, pages, chapters);
+            chapterImageEmbed = chaptersAssets.buildChapterImageEmbed(chapter.id, actualPage, pages, chapters);
 
             await chaptersAssets.uploadEmbedImage(interaction, pages[actualPage]);
             await interaction.channel.send({ embeds: [chapterImageEmbed], components: interaction.message.components });
